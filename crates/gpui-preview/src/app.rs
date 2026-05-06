@@ -9,6 +9,7 @@ use gpui_component::{
     input::{Input, InputEvent, InputState},
     resizable::{h_resizable, resizable_panel},
     scroll::ScrollableElement as _,
+    select::{Select, SelectEvent, SelectState},
     sidebar::{Sidebar, SidebarGroup, SidebarMenu, SidebarMenuItem},
     slider::{Slider, SliderEvent, SliderState, SliderValue},
     switch::Switch,
@@ -30,6 +31,7 @@ struct PreviewPanel {
     text_inputs: HashMap<&'static str, Entity<InputState>>,
     slider_states: HashMap<&'static str, Entity<SliderState>>,
     color_picker_states: HashMap<&'static str, Entity<ColorPickerState>>,
+    select_states: HashMap<&'static str, Entity<SelectState<Vec<String>>>>,
 
     // Stories
     all_stories: AllStories,
@@ -52,6 +54,7 @@ impl PreviewPanel {
             text_inputs: HashMap::new(),
             slider_states: HashMap::new(),
             color_picker_states: HashMap::new(),
+            select_states: HashMap::new(),
             all_stories: stories::load_stories(),
             active_story: None,
             story_name_input,
@@ -80,6 +83,7 @@ impl PreviewPanel {
         self.text_inputs.clear();
         self.slider_states.clear();
         self.color_picker_states.clear();
+        self.select_states.clear();
         self._subscriptions.clear();
 
         let fields: Vec<_> = self
@@ -165,6 +169,25 @@ impl PreviewPanel {
                         cx.notify();
                     }));
                 self.color_picker_states.insert(name, picker);
+            }
+            ControlKind::Select(variants) => {
+                let items: Vec<String> = variants.iter().map(|v| v.to_string()).collect();
+                let current = self.current_enum(name);
+                let initial_index = items.iter().position(|v| v == &current);
+                let initial_path =
+                    initial_index.map(|i| gpui_component::IndexPath::default().row(i));
+                let state = cx.new(|cx| SelectState::new(items, initial_path, window, cx));
+                self._subscriptions.push(cx.subscribe(
+                    &state,
+                    move |this, _, event: &SelectEvent<Vec<String>>, cx| {
+                        let SelectEvent::Confirm(value) = event;
+                        if let Some(v) = value {
+                            this.update_field(name, FieldValue::Enum(v.clone()));
+                            cx.notify();
+                        }
+                    },
+                ));
+                self.select_states.insert(name, state);
             }
             ControlKind::Optional(inner) => {
                 self.build_control_for(name, inner, window, cx);
@@ -396,6 +419,13 @@ impl PreviewPanel {
             ControlKind::Color => {
                 if let Some(picker) = self.color_picker_states.get(name) {
                     ColorPicker::new(picker).into_any_element()
+                } else {
+                    div().child("—").into_any_element()
+                }
+            }
+            ControlKind::Select(_) => {
+                if let Some(state) = self.select_states.get(name) {
+                    Select::new(state).into_any_element()
                 } else {
                     div().child("—").into_any_element()
                 }
@@ -643,41 +673,12 @@ impl Render for PreviewPanel {
                             div().child("—").into_any_element()
                         }
                     }
-                    ControlKind::Select(variants) => {
-                        let current = self.current_enum(field.name);
-                        let name = field.name;
-                        let variants_owned: Vec<String> =
-                            variants.iter().map(|v| v.to_string()).collect();
-
-                        v_flex()
-                            .gap_1()
-                            .children(variants.iter().enumerate().map(|(i, variant)| {
-                                let is_selected = *variant == current;
-                                let variants_ref = variants_owned.clone();
-                                div()
-                                    .id(SharedString::from(format!("{}-{}", field.name, variant)))
-                                    .px_2()
-                                    .py_1()
-                                    .rounded(px(4.))
-                                    .cursor_pointer()
-                                    .text_sm()
-                                    .when(is_selected, |el| {
-                                        el.bg(cx.theme().primary)
-                                            .text_color(cx.theme().primary_foreground)
-                                    })
-                                    .when(!is_selected, |el| el.hover(|el| el.bg(cx.theme().muted)))
-                                    .on_click(cx.listener(move |this, _, _, cx| {
-                                        if let Some(variant) = variants_ref.get(i) {
-                                            this.update_field(
-                                                name,
-                                                FieldValue::Enum(variant.clone()),
-                                            );
-                                            cx.notify();
-                                        }
-                                    }))
-                                    .child(*variant)
-                            }))
-                            .into_any_element()
+                    ControlKind::Select(_) => {
+                        if let Some(state) = self.select_states.get(field.name) {
+                            Select::new(state).into_any_element()
+                        } else {
+                            div().child("—").into_any_element()
+                        }
                     }
                     ControlKind::Color => {
                         if let Some(picker) = self.color_picker_states.get(field.name) {
