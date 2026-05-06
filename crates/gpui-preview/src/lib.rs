@@ -25,6 +25,8 @@ pub use inventory;
 
 use gpui::*;
 
+pub use app::{CloseDialog, SelectNext, SelectPrev};
+
 /// Launch the preview app without icon assets.
 pub fn run() {
     let app = Application::new();
@@ -40,6 +42,13 @@ pub fn run_with_assets(assets: impl AssetSource + 'static) {
 fn launch(app: Application) {
     app.run(move |cx| {
         gpui_component::init(cx);
+
+        cx.bind_keys([
+            KeyBinding::new("up", SelectPrev, None),
+            KeyBinding::new("down", SelectNext, None),
+            KeyBinding::new("escape", CloseDialog, None),
+        ]);
+
         cx.activate(true);
 
         let window_size = size(px(1400.), px(900.));

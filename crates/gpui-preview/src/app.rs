@@ -19,6 +19,8 @@ use crate::registry::{AnyPreviewable, PreviewEntry};
 use crate::stories::{self, AllStories};
 use crate::types::*;
 
+actions!(preview, [SelectPrev, SelectNext, CloseDialog]);
+
 // ── PreviewPanel (canvas + prop editor + stories) ────────────────────
 
 struct PreviewPanel {
@@ -946,6 +948,36 @@ impl Render for PreviewApp {
             .id("preview-root")
             .size_full()
             .track_focus(&self.focus_handle)
+            .on_action(cx.listener(|this, _: &SelectNext, window, cx| {
+                let len = this.entries.len();
+                if len == 0 {
+                    return;
+                }
+                let next = match this.active_index {
+                    Some(i) => (i + 1) % len,
+                    None => 0,
+                };
+                this.select_component(next, window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &SelectPrev, window, cx| {
+                let len = this.entries.len();
+                if len == 0 {
+                    return;
+                }
+                let prev = match this.active_index {
+                    Some(i) => (i + len - 1) % len,
+                    None => 0,
+                };
+                this.select_component(prev, window, cx);
+            }))
+            .on_action(cx.listener(|this, _: &CloseDialog, _, cx| {
+                this.panel.update(cx, |panel, cx| {
+                    if panel.show_save_dialog {
+                        panel.show_save_dialog = false;
+                        cx.notify();
+                    }
+                });
+            }))
             .child(
                 h_resizable("preview-layout")
                     .child(
