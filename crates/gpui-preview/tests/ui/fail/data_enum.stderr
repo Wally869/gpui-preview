@@ -1,0 +1,5 @@
+error: Previewable enums must have only unit variants (no fields)
+ --> tests/ui/fail/data_enum.rs:7:5
+  |
+7 |     B(String),
+  |     ^^^^^^^^^

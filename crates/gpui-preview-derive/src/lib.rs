@@ -23,6 +23,8 @@ fn derive_struct(input: &DeriveInput, data: &syn::DataStruct) -> TokenStream {
     let name = &input.ident;
     let name_str = name.to_string();
 
+    let no_register = has_preview_flag(&input.attrs, "no_register");
+
     let category =
         extract_preview_kv(&input.attrs, "category").unwrap_or_else(|| "Uncategorized".to_string());
     let description = extract_doc_comment(&input.attrs);
@@ -67,6 +69,29 @@ fn derive_struct(input: &DeriveInput, data: &syn::DataStruct) -> TokenStream {
         set_arms.push(type_to_set(field_ident, &field_name, ty));
     }
 
+    let registration = if no_register {
+        quote! {}
+    } else {
+        quote! {
+            gpui_preview::inventory::submit! {
+                gpui_preview::PreviewEntry {
+                    id: || std::any::type_name::<#name>(),
+                    name: #name_str,
+                    category: #category,
+                    description: #description,
+                    fields: <#name as gpui_preview::Previewable>::fields,
+                    create_default: || {
+                        Box::new(<#name as gpui_preview::Previewable>::default_preview())
+                    },
+                    render: |any: &dyn std::any::Any| -> gpui::AnyElement {
+                        let instance = any.downcast_ref::<#name>().expect("type mismatch in render");
+                        gpui::IntoElement::into_any_element(gpui::Component::new(instance.clone()))
+                    },
+                }
+            }
+        }
+    };
+
     let expanded = quote! {
         impl gpui_preview::Previewable for #name {
             fn name() -> &'static str { #name_str }
@@ -98,22 +123,7 @@ fn derive_struct(input: &DeriveInput, data: &syn::DataStruct) -> TokenStream {
             }
         }
 
-        gpui_preview::inventory::submit! {
-            gpui_preview::PreviewEntry {
-                id: || std::any::type_name::<#name>(),
-                name: #name_str,
-                category: #category,
-                description: #description,
-                fields: <#name as gpui_preview::Previewable>::fields,
-                create_default: || {
-                    Box::new(<#name as gpui_preview::Previewable>::default_preview())
-                },
-                render: |any: &dyn std::any::Any| -> gpui::AnyElement {
-                    let instance = any.downcast_ref::<#name>().expect("type mismatch in render");
-                    gpui::IntoElement::into_any_element(gpui::Component::new(instance.clone()))
-                },
-            }
-        }
+        #registration
     };
 
     expanded.into()
