@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "crates/gpui-preview",
+    "crates/gpui-preview-derive",
+    "examples/my-app-preview",
+    "examples/capture-test",
+]
+default-members = ["examples/my-app-preview"]
+resolver = "3"
+
+[patch.crates-io]
+gpui = { path = "vendor/gpui" }
