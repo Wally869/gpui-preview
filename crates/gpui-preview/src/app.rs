@@ -39,6 +39,9 @@ struct PreviewPanel {
     story_name_input: Entity<InputState>,
     show_save_dialog: bool,
 
+    // Viewport preset: None = full width, Some(px) = constrained width
+    viewport_preset: Option<f32>,
+
     _subscriptions: Vec<Subscription>,
 }
 
@@ -59,6 +62,7 @@ impl PreviewPanel {
             active_story: None,
             story_name_input,
             show_save_dialog: false,
+            viewport_preset: None,
             _subscriptions: Vec::new(),
         }
     }
@@ -757,6 +761,62 @@ impl Render for PreviewPanel {
             })
             .collect();
 
+        // === VIEWPORT TOOLBAR ===
+        let viewport_preset = self.viewport_preset;
+        let viewport_presets: &[(&str, Option<f32>)] = &[
+            ("S", Some(320.)),
+            ("M", Some(640.)),
+            ("L", Some(960.)),
+            ("Full", None),
+        ];
+        let viewport_toolbar = h_flex()
+            .gap_2()
+            .items_center()
+            .px_4()
+            .py_2()
+            .border_b_1()
+            .border_color(cx.theme().border)
+            .child(
+                div()
+                    .text_xs()
+                    .font_weight(FontWeight::SEMIBOLD)
+                    .text_color(cx.theme().muted_foreground)
+                    .child("Viewport"),
+            )
+            .children(viewport_presets.iter().map(|(label, width)| {
+                let is_active = viewport_preset == *width;
+                let width_val = *width;
+                div()
+                    .id(SharedString::from(format!("viewport-{}", label)))
+                    .px_2()
+                    .py(px(2.))
+                    .rounded(px(4.))
+                    .cursor_pointer()
+                    .text_xs()
+                    .when(is_active, |el| {
+                        el.bg(cx.theme().primary)
+                            .text_color(cx.theme().primary_foreground)
+                    })
+                    .when(!is_active, |el| {
+                        el.bg(cx.theme().muted).hover(|el| el.bg(cx.theme().accent))
+                    })
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        this.viewport_preset = width_val;
+                        cx.notify();
+                    }))
+                    .child(*label)
+            }));
+
+        // Constrained or unconstrained preview element
+        let constrained_preview: AnyElement = match viewport_preset {
+            Some(width) => div()
+                .w(px(width))
+                .overflow_x_hidden()
+                .child(preview_element)
+                .into_any_element(),
+            None => preview_element,
+        };
+
         // === CANVAS ===
         let canvas = v_flex()
             .flex_1()
@@ -784,6 +844,7 @@ impl Render for PreviewPanel {
             )
             .when(self.entry.is_some(), |el| el.child(stories_bar))
             .when_some(save_dialog, |el, dialog| el.child(dialog))
+            .child(viewport_toolbar)
             .child(
                 div()
                     .flex_1()
@@ -791,7 +852,7 @@ impl Render for PreviewPanel {
                     .items_center()
                     .justify_center()
                     .p_8()
-                    .child(preview_element),
+                    .child(constrained_preview),
             );
 
         // === PROP EDITOR ===
