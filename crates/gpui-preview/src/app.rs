@@ -325,6 +325,14 @@ impl PreviewPanel {
         !matches!(self.current_value(name), Some(FieldValue::None) | None)
     }
 
+    fn reset_to_default(&mut self, window: &mut Window, cx: &mut Context<Self>) {
+        let Some(entry) = self.entry else { return };
+        self.current_instance = Some((entry.create_default)());
+        self.active_story = None;
+        self.rebuild_controls(window, cx);
+        cx.notify();
+    }
+
     fn set_optional_to_default(&mut self, name: &str) {
         let Some(field) = self.current_fields.iter().find(|f| f.name == name) else {
             return;
@@ -799,11 +807,33 @@ impl Render for PreviewPanel {
                     .border_b_1()
                     .border_color(cx.theme().border)
                     .child(
-                        div()
-                            .text_sm()
-                            .font_weight(FontWeight::BOLD)
-                            .text_color(cx.theme().muted_foreground)
-                            .child("Properties"),
+                        h_flex()
+                            .justify_between()
+                            .items_center()
+                            .child(
+                                div()
+                                    .text_sm()
+                                    .font_weight(FontWeight::BOLD)
+                                    .text_color(cx.theme().muted_foreground)
+                                    .child("Properties"),
+                            )
+                            .when(self.entry.is_some(), |el| {
+                                el.child(
+                                    div()
+                                        .id("reset-defaults")
+                                        .px_2()
+                                        .py(px(2.))
+                                        .rounded(px(4.))
+                                        .cursor_pointer()
+                                        .text_xs()
+                                        .text_color(cx.theme().muted_foreground)
+                                        .hover(|el| el.bg(cx.theme().muted))
+                                        .on_click(cx.listener(|this, _, window, cx| {
+                                            this.reset_to_default(window, cx);
+                                        }))
+                                        .child("Reset"),
+                                )
+                            }),
                     ),
             )
             .child(v_flex().p_4().gap_4().children(prop_controls));
