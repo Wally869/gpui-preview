@@ -1,4 +1,43 @@
-//! Storybook-like component preview and capture tool for GPUI.
+//! # gpui-preview
+//!
+//! A Storybook-like component preview and capture tool for
+//! [GPUI](https://gpui.rs), Zed's GPU-accelerated UI framework.
+//!
+//! ## Overview
+//!
+//! `gpui-preview` gives you an interactive preview app with sidebar navigation,
+//! live prop editing, and named story presets — plus optional frame capture to
+//! PNG for visual regression testing.
+//!
+//! ## Quick start
+//!
+//! Derive [`Previewable`] on your components and launch the app:
+//!
+//! ```rust,no_run
+//! use gpui::prelude::*;
+//! use gpui::*;
+//! use gpui_preview::Previewable;
+//!
+//! #[derive(Clone, Default, Previewable)]
+//! #[preview(category = "Inputs")]
+//! pub struct Button {
+//!     pub label: String,
+//!     pub disabled: bool,
+//!     #[preview(slider(min = 0.0, max = 24.0))]
+//!     pub border_radius: f32,
+//! }
+//! # impl RenderOnce for Button {
+//! #     fn render(self, _w: &mut Window, _cx: &mut App) -> impl IntoElement { div() }
+//! # }
+//! ```
+//!
+//! Then call [`run`] or [`run_with_assets`] from your `main`.
+//!
+//! ## Feature flags
+//!
+//! | Flag | Description |
+//! |------|-------------|
+//! | `capture` | Enables [`capture()`] for GPU framebuffer readback to PNG. Requires a [forked gpui](https://github.com/Wally869/gpui-preview#with-frame-capture) wired in via `[patch.crates-io]`. |
 
 mod app;
 #[cfg(feature = "capture")]

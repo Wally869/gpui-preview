@@ -1,3 +1,26 @@
+//! Derive macro for [`gpui_preview::Previewable`].
+//!
+//! This crate provides `#[derive(Previewable)]` which generates prop editor
+//! metadata and automatic component registration via [`inventory`] for use
+//! with the `gpui-preview` app.
+//!
+//! You normally don't depend on this crate directly — it's re-exported from
+//! `gpui-preview`.
+//!
+//! ## Struct attributes
+//!
+//! | Attribute | Description |
+//! |-----------|-------------|
+//! | `#[preview(category = "...")]` | Sidebar grouping in the preview app |
+//! | `#[preview(no_register)]` | Skip automatic `inventory` registration |
+//!
+//! ## Field attributes
+//!
+//! | Attribute | Description |
+//! |-----------|-------------|
+//! | `#[preview(skip)]` | Exclude field from the prop editor |
+//! | `#[preview(slider(min = 0.0, max = 100.0))]` | Render as a slider control |
+
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Expr, Fields, Lit, Meta, parse_macro_input};

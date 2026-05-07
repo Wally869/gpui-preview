@@ -2,6 +2,12 @@
 name = "gpui-preview"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "A Storybook-like component preview and capture tool for GPUI, Zed's GPU-accelerated UI framework"
+repository = "https://github.com/Wally869/gpui-preview"
+readme = "../../README.md"
+keywords = ["gpui", "ui", "preview", "storybook", "components"]
+categories = ["gui", "development-tools"]
 
 [features]
 default = []
@@ -11,7 +17,7 @@ capture = ["dep:image"]
 anyhow = "1.0.102"
 gpui = "0.2.2"
 gpui-component = "0.5.1"
-gpui-preview-derive = { path = "../gpui-preview-derive" }
+gpui-preview-derive = { version = "0.1.0", path = "../gpui-preview-derive" }
 image = { version = "0.25", default-features = false, features = ["png"], optional = true }
 inventory = "0.3"
 serde = { version = "1", features = ["derive"] }

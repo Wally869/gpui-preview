@@ -2,6 +2,12 @@
 name = "gpui-preview-derive"
 version = "0.1.0"
 edition = "2024"
+license = "MIT"
+description = "Derive macro for gpui-preview — generates prop editors and component registration for GPUI components"
+repository = "https://github.com/Wally869/gpui-preview"
+readme = "../../README.md"
+keywords = ["gpui", "ui", "preview", "storybook", "derive"]
+categories = ["gui", "development-tools"]
 
 [lib]
 proc-macro = true
