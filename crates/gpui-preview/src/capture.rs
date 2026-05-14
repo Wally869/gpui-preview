@@ -15,6 +15,12 @@ pub struct CapturedFrame {
 impl CapturedFrame {
     /// Save the frame as a PNG file. Converts BGRA to RGBA internally.
     pub fn save_png(&self, path: impl AsRef<Path>) -> Result<(), crate::PreviewError> {
+        let path = path.as_ref();
+        if let Some(parent) = path.parent() {
+            if !parent.as_os_str().is_empty() {
+                std::fs::create_dir_all(parent)?;
+            }
+        }
         let mut rgba = self.data.clone();
         for pixel in rgba.chunks_exact_mut(4) {
             pixel.swap(0, 2); // B <-> R
